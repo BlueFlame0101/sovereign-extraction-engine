@@ -114,38 +114,18 @@ The Sovereign can be configured with different strategic lenses:
 | **Privacy** | Data sent to cloud | Data never leaves server |
 | **Best For** | Development, demos | Legal, Finance, Healthcare |
 
-## ⚙️ Setup
+## 🚧 Project Status & Implementation Note
 
-### 1. Install Dependencies
+This repository serves as a **architectural reference** (Proof of Concept) for a local-first, privacy-centric AI pipeline.
 
-```bash
-pip install dspy-ai streamlit python-dotenv
-```
+Due to the strict security requirements (**Air-gapped / Local Inference**) and hardware dependencies (Ollama running specific quantized models), this codebase is **not configured for public plug-and-play execution**. 
 
-### 2. Configure API Key (Cloud Version)
+Instead, it is shared to demonstrate advanced implementation of:
+* **DSPy Orchestration:** Programmatic prompting structures over manual string manipulation.
+* **Hierarchical Agents:** The "Council" pattern logic code.
+* **Deterministic Output:** Pydantic schema validation patterns.
 
-```bash
-export OPENROUTER_API_KEY="your-api-key-here"
-```
-
-Or create a `.env` file in `demo-cloud-version/`:
-```
-OPENROUTER_API_KEY=your-api-key-here
-```
-
-### 3. Run the Dashboard
-
-**Cloud Version:**
-```bash
-cd demo-cloud-version
-streamlit run dashboard.py
-```
-
-**Local Version (requires Ollama running):**
-```bash
-cd sovereign-engine
-streamlit run dashboard.py
-```
+*For a live demonstration of the "Sovereign Engine" running on local infrastructure, please contact the developer directly.*
 
 ## 🔒 Privacy & Local Inference
 
