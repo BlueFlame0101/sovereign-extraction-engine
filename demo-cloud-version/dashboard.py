@@ -1,15 +1,11 @@
 import streamlit as st
 import time
-
-# Importer vores motor
 from config import get_cfo_model, get_cmo_model, get_cto_model
 from micro_council import consult_finance, consult_growth, consult_tech
 from macro_council import DepartmentHead, Sovereign
 
-# --- SIDE OPSÆTNING ---
 st.set_page_config(page_title="Council of Kings", page_icon="👑", layout="wide")
 
-# Custom CSS for at få det til at se lækkert ud
 st.markdown("""
 <style>
     .reportview-container { background: #0e1117; }
@@ -19,7 +15,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR: KONFIGURATION ---
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/throne.png", width=80)
     st.header("⚙️ Council Configuration")
@@ -32,7 +27,6 @@ with st.sidebar:
          "🚀 The Silicon Visionary (Growth First!)"]
     )
     
-    # Oversæt valg til en prompt
     persona_prompts = {
         "⚖️ The Balanced Architect (Standard)": "Balance Stability, Budget, and Growth equally. Seek sustainable compromises.",
         "⚔️ The Wartime General (Save Cash!)": "PRIORITIZE CASH PRESERVATION ABOVE ALL. Be extremely risk-averse. Cut costs.",
@@ -47,8 +41,6 @@ with st.sidebar:
 
     st.info("System Status: 🟢 ONLINE (Llama/Mistral/Hermes Active)")
 
-# --- MAIN UI ---
-
 st.title("👑 THE SOVEREIGN COUNCIL")
 st.markdown("<p style='text-align: center; color: gray;'>Autonomous Multi-Agent Strategic Decision System</p>", unsafe_allow_html=True)
 
@@ -60,29 +52,22 @@ if st.button("🚀 CONVENE THE COUNCIL"):
     if not query:
         st.error("Please enter a query first.")
     else:
-        # --- FASE 1: MICRO INTELLIGENCE ---
         st.subheader("⬇️ Phase 1: Micro-Intelligence Gathering")
-        
         col1, col2, col3 = st.columns(3)
-        
-        # Vi bruger en container til at vise live status
         status_box = st.status("Activation Signal Sent... Waking up 13 Agents...", expanded=True)
         
-        # 1. FINANS
         status_box.write(f"💰 Consultng {dept_name_fin} Dept (3 Agents working)...")
         rep_fin = consult_finance(query)
         col1.success(f"✅ {dept_name_fin} Report Ready")
         with col1.expander("📄 View Full Report"):
             st.write(rep_fin)
             
-        # 2. VÆKST
         status_box.write(f"📈 Consulting {dept_name_gro} Dept (3 Agents working)...")
         rep_gro = consult_growth(query)
         col2.success(f"✅ {dept_name_gro} Report Ready")
         with col2.expander("📄 View Full Report"):
             st.write(rep_gro)
             
-        # 3. TECH
         status_box.write(f"💻 Consulting {dept_name_tec} Dept (3 Agents working)...")
         rep_tec = consult_tech(query)
         col3.success(f"✅ {dept_name_tec} Report Ready")
@@ -91,11 +76,9 @@ if st.button("🚀 CONVENE THE COUNCIL"):
             
         status_box.update(label="✅ Phase 1 Complete: All Data Secured", state="complete", expanded=False)
         
-        # --- FASE 2: MACRO DEBATE ---
         st.write("---")
         st.subheader("🗣️ Phase 2: Boardroom Debate (The Chiefs Speak)")
         
-        # Instancier Cheferne
         cfo = DepartmentHead(f"Head of {dept_name_fin}", get_cfo_model())
         cmo = DepartmentHead(f"Head of {dept_name_gro}", get_cmo_model())
         cto = DepartmentHead(f"Head of {dept_name_tec}", get_cto_model())
@@ -103,24 +86,23 @@ if st.button("🚀 CONVENE THE COUNCIL"):
         col_a, col_b, col_c = st.columns(3)
         
         with col_a:
-            st.markdown(f"### 🧛 {dept_name_fin}")
+            st.markdown(f"### 💰 {dept_name_fin}")
             with st.spinner("Mistral Small formulating argument..."):
                 arg_fin = cfo.give_opening(rep_fin, query)
             st.info(arg_fin)
 
         with col_b:
-            st.markdown(f"### 🦄 {dept_name_gro}")
+            st.markdown(f"### 📈 {dept_name_gro}")
             with st.spinner("Hermes 405B formulating argument..."):
                 arg_gro = cmo.give_opening(rep_gro, query)
             st.info(arg_gro)
 
         with col_c:
-            st.markdown(f"### 🤖 {dept_name_tec}")
+            st.markdown(f"### 💻 {dept_name_tec}")
             with st.spinner("Llama 70B formulating argument..."):
                 arg_tec = cto.give_opening(rep_tec, query)
             st.info(arg_tec)
 
-        # --- FASE 3: CROSS EXAMINATION ---
         st.write("---")
         st.subheader("⚔️ Phase 3: Cross-Examination (Rebuttals)")
         
@@ -129,15 +111,13 @@ if st.button("🚀 CONVENE THE COUNCIL"):
             reb_gro = cmo.give_rebuttal(arg_gro, f"{dept_name_fin}: {arg_fin} | {dept_name_tec}: {arg_tec}")
             reb_tec = cto.give_rebuttal(arg_tec, f"{dept_name_fin}: {arg_fin} | {dept_name_gro}: {arg_gro}")
 
-        # Vis debatten som en chat
-        with st.chat_message("user", avatar="🧛"):
+        with st.chat_message("user", avatar="💰"):
             st.write(f"**{dept_name_fin} Rebuttal:** {reb_fin}")
-        with st.chat_message("assistant", avatar="🦄"):
+        with st.chat_message("assistant", avatar="📈"):
             st.write(f"**{dept_name_gro} Rebuttal:** {reb_gro}")
-        with st.chat_message("user", avatar="🤖"):
+        with st.chat_message("user", avatar="💻"):
             st.write(f"**{dept_name_tec} Rebuttal:** {reb_tec}")
 
-        # --- FASE 4: SOVEREIGN VERDICT ---
         st.write("---")
         st.header("👑 Phase 4: The Sovereign Verdict")
         
@@ -150,11 +130,9 @@ if st.button("🚀 CONVENE THE COUNCIL"):
                 rebuttals={'fin': reb_fin, 'gro': reb_gro, 'tec': reb_tec}
             )
         
-        # Vis tankeprocessen (Glass Box)
         with st.expander("🧠 Open Sovereign's Internal Monologue (Reasoning Process)", expanded=False):
             st.markdown(f"**Strategic Lens:** {selected_persona}")
             st.write(verdict.internal_thought_process)
             
-        # Vis den endelige beslutning
         st.success("### 📜 OFFICIAL DECREE")
         st.markdown(f"#### {verdict.final_decision}")
