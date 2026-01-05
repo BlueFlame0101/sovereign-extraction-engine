@@ -21,23 +21,25 @@ I stedet for én stor model, bruger arkitekturen specialiserede mikro-agenter st
 
 ```mermaid
 graph TD
-    Input[📂 Unstructured Data (PDF/Docs)] -->|Ingest & Chunking| VectorStore[Local Vector Store (RAG)]
+    Input["Unstructured Data (PDF/Docs)"] -->|Ingest and Chunking| VectorStore["Local Vector Store (RAG)"]
     
-    subgraph "The Extraction Layer (Micro-Agents)"
-        VectorStore -->|Retrieve Context A| Agent1[🤖 Domain Agent A]
-        VectorStore -->|Retrieve Context B| Agent2[🤖 Domain Agent B]
-        VectorStore -->|Retrieve Context C| Agent3[🤖 Domain Agent C]
+    subgraph Extraction["The Extraction Layer (Micro-Agents)"]
+        VectorStore -->|Retrieve Context A| Agent1["Domain Agent A"]
+        VectorStore -->|Retrieve Context B| Agent2["Domain Agent B"]
+        VectorStore -->|Retrieve Context C| Agent3["Domain Agent C"]
     end
 
-    subgraph "The Validation Layer (The Sovereign)"
-        Agent1 & Agent2 & Agent3 -->|Draft Extraction| Validator[👑 Sovereign Validator]
-        Validator -->|Validation Check| Schema[🛡️ Pydantic Strict Schema]
+    subgraph Validation["The Validation Layer (The Sovereign)"]
+        Agent1 --> Validator["Sovereign Validator"]
+        Agent2 --> Validator
+        Agent3 --> Validator
+        Validator -->|Validation Check| Schema["Pydantic Strict Schema"]
         
-        Schema -- Error (Self-Correction Loop) --> Validator
-        Schema -- Success --> JSON[Structured Output]
+        Schema -->|Error| Validator
+        Schema -->|Success| JSON["Structured Output"]
     end
 
-    JSON -->|Integration| ERP[Legacy System / ERP]
+    JSON -->|Integration| ERP["Legacy System / ERP"]
 ```
 
 ## 🔒 Privacy & Local Inference
