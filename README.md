@@ -9,7 +9,7 @@
 This project demonstrates a **"Council of Kings"** approach to AI decision-making. Instead of relying on a single LLM, we orchestrate **13+ specialized agents** in a structured debate system that mimics corporate governance.
 
 **The Sovereign Engine** solves the "single point of failure" problem by:
-1. **Distributed Intelligence:** 3 departments × 3 workers + 3 chiefs + 1 sovereign = 12 agents
+1. **Distributed Intelligence:** 3 departments × 3 workers + 3 chiefs + 1 sovereign
 2. **Adversarial Debate:** Chiefs argue and rebut each other before final decision
 3. **Configurable Strategy:** The Sovereign can adopt different personas (cost-focused, growth-focused, balanced)
 
