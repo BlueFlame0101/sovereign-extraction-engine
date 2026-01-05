@@ -1,75 +1,169 @@
-# The Sovereign Extraction Engine 🏗️🤖
+# The Sovereign Extraction Engine 👑🤖
 
-> **Architecture:** Hierarchical Multi-Agent System (DSPy)
-> **Core Focus:** Local-Only Privacy, RAG, and Deterministic Data Extraction
+> **Architecture:** Hierarchical Multi-Agent Debate System (DSPy)  
+> **Core Focus:** Autonomous Strategic Decision-Making via AI Council  
 > **Status:** Proof of Concept (POC) Framework
 
 ## 🎯 The Core Philosophy
-Dette projekt demonstrerer en **"Domain-First" tilgang til AI-arkitektur**.
-Mange virksomheder fejler med AI, fordi de anvender generiske "Chat"-modeller til specifikke, strukturerede opgaver.
 
-**The Sovereign Engine** løser problemet ved at kombinere **RAG (Retrieval-Augmented Generation)** med en stram **Multi-Agent struktur**, der sikrer:
-1.  **Total Privacy:** Designet til at køre 100% offline (Air-gapped) via lokale LLM'er (Ollama).
-2.  **Determinisme:** Erstatter "sandsynlighed" med "struktur" via Pydantic-skemaer.
-3.  **Modularitet:** Kan hurtigt omstilles fra ét domæne (f.eks. Jura) til et andet (f.eks. Finans eller Sundhed).
+This project demonstrates a **"Council of Kings"** approach to AI decision-making. Instead of relying on a single LLM, we orchestrate **13+ specialized agents** in a structured debate system that mimics corporate governance.
+
+**The Sovereign Engine** solves the "single point of failure" problem by:
+1. **Distributed Intelligence:** 3 departments × 3 workers + 3 chiefs + 1 sovereign = 13 agents
+2. **Adversarial Debate:** Chiefs argue and rebut each other before final decision
+3. **Configurable Strategy:** The Sovereign can adopt different personas (cost-focused, growth-focused, balanced)
 
 ## 🏗️ System Architecture
-Systemet er bygget som en "Samlebånds-fabrik" snarere end en chatbot. Det nedbryder komplekse dokumenter til mikro-opgaver.
 
-### The "Council" Pattern
-I stedet for én stor model, bruger arkitekturen specialiserede mikro-agenter styret af en "Sovereign" validator.
+### Two-Phase Council Pattern
 
 ```mermaid
 graph TD
-    Input["Unstructured Data (PDF/Docs)"] -->|Ingest and Chunking| VectorStore["Local Vector Store (RAG)"]
+    Query["User Query"] --> Router["Intelligent Router"]
+    Router -->|Simple Query| FastLane["Direct Response"]
+    Router -->|Complex Query| DeepLane["Full Council Assembly"]
     
-    subgraph Extraction["The Extraction Layer (Micro-Agents)"]
-        VectorStore -->|Retrieve Context A| Agent1["Domain Agent A"]
-        VectorStore -->|Retrieve Context B| Agent2["Domain Agent B"]
-        VectorStore -->|Retrieve Context C| Agent3["Domain Agent C"]
-    end
-
-    subgraph Validation["The Validation Layer (The Sovereign)"]
-        Agent1 --> Validator["Sovereign Validator"]
-        Agent2 --> Validator
-        Agent3 --> Validator
-        Validator -->|Validation Check| Schema["Pydantic Strict Schema"]
+    subgraph Phase1["Phase 1: Micro-Intelligence (9 Workers)"]
+        DeepLane --> Finance["Finance Dept"]
+        DeepLane --> Growth["Growth Dept"]
+        DeepLane --> Tech["Tech Dept"]
         
-        Schema -->|Error| Validator
-        Schema -->|Success| JSON["Structured Output"]
+        Finance --> W1["Worker 1"] & W2["Worker 2"] & W3["Worker 3"]
+        Growth --> W4["Worker 4"] & W5["Worker 5"] & W6["Worker 6"]
+        Tech --> W7["Worker 7"] & W8["Worker 8"] & W9["Worker 9"]
     end
-
-    JSON -->|Integration| ERP["Legacy System / ERP"]
+    
+    subgraph Phase2["Phase 2: Boardroom Debate (3 Chiefs)"]
+        W1 & W2 & W3 --> CFO["CFO (Mistral 24B)"]
+        W4 & W5 & W6 --> CMO["CMO (Llama 405B)"]
+        W7 & W8 & W9 --> CTO["CTO (DeepSeek)"]
+        
+        CFO -->|Opening + Rebuttal| Debate["Adversarial Debate"]
+        CMO -->|Opening + Rebuttal| Debate
+        CTO -->|Opening + Rebuttal| Debate
+    end
+    
+    subgraph Phase3["Phase 3: Sovereign Decision"]
+        Debate --> Sovereign["The Sovereign (Llama 70B)"]
+        Sovereign --> Decision["Final Strategic Decision"]
+    end
 ```
 
-## 🔒 Privacy & Local Inference
-Denne arkitektur er designet specifikt til sektorer med høje sikkerhedskrav (Advokater, Offentlig Forvaltning, Finans).
+### Key Features
 
-- **No Cloud Dependency:** Motoren er testet med Llama 3 (Quantized) kørt lokalt via Ollama.
-- **Air-Gapped Ready:** Kræver ingen internetforbindelse under inference. Data forlader aldrig serveren.
-- **Legacy Integration:** Fungerer som en "Sidecar"-applikation, der ikke kræver omskrivning af eksisterende IT-systemer, men leverer data via standardformater (JSON/CSV/XML).
+| Feature | Description |
+|---------|-------------|
+| **Intelligent Router** | Scores query complexity (1-10) and routes to FAST_LANE or DEEP_LANE |
+| **Peer Review** | Workers cross-review each other's drafts with scores before boss synthesis |
+| **Adversarial Debate** | Chiefs give opening arguments, then rebuttals attacking each other's logic |
+| **Sovereign Personas** | Configurable decision strategies (Balanced / Wartime / Visionary) |
+| **RAG Integration** | Each department retrieves context from a shared knowledge graph |
 
-## 🛠️ Tech Stack & Implementation
-Dette repo viser min forståelse for moderne AI-orkestrering:
+### Sovereign Personas
+
+The Sovereign can be configured with different strategic lenses:
+
+- ⚖️ **The Balanced Architect** - Seek sustainable compromises
+- ⚔️ **The Wartime General** - Prioritize cash preservation, be risk-averse
+- 🚀 **The Silicon Visionary** - Prioritize growth, burn cash to win
+
+## 🛠️ Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| **Orchestration** | DSPy (Programmatic Prompting frem for manuel prompt engineering) |
-| **LLM Backend** | Agnostisk - understøtter både OpenRouter (Prototyping) og Ollama (Production/Local) |
-| **Data Validation** | Pydantic (sikrer datatype-integritet før output) |
-| **Frontend** | Streamlit (til hurtig prototyping og "Human-in-the-loop" validering) |
+| **Orchestration** | DSPy (Programmatic Prompting) |
+| **LLM Backend** | OpenRouter (Cloud) / Ollama (Local) |
+| **Frontend** | Streamlit Dashboard |
+| **Config** | python-dotenv |
+
+### Models Used
+
+| Role | Model |
+|------|-------|
+| Workers | Mistral 7B, Llama 3.2 3B, Llama 3.3 70B |
+| CFO | Mistral Small 24B |
+| CMO | Llama 3.1 405B (Hermes) |
+| CTO | DeepSeek |
+| Sovereign | Llama 3.3 70B |
+
+## 📁 Project Structure
+
+```
+├── demo-cloud-version/    # Cloud version using OpenRouter API
+│   ├── config.py          # Model configuration & API setup
+│   ├── micro_council.py   # Department workers + peer review
+│   ├── macro_council.py   # Chiefs debate + Sovereign decision
+│   ├── router.py          # Query complexity router
+│   ├── retriever.py       # RAG context retrieval
+│   └── dashboard.py       # Streamlit UI
+│
+├── sovereign-engine/      # Local version using Ollama
+│   └── (same structure)   # Air-gapped, privacy-focused
+│
+└── README.md
+```
+
+### Which Version Should I Use?
+
+| Version | `demo-cloud-version/` | `sovereign-engine/` |
+|---------|----------------------|---------------------|
+| **Use Case** | Rapid prototyping & testing | Production & sensitive data |
+| **LLM Backend** | OpenRouter (cloud API) | Ollama (local inference) |
+| **Internet** | Required | Not required (air-gapped) |
+| **Cost** | Pay per token | Free (your hardware) |
+| **Privacy** | Data sent to cloud | Data never leaves server |
+| **Best For** | Development, demos | Legal, Finance, Healthcare |
 
 ## ⚙️ Setup
 
-Set your OpenRouter API key as an environment variable:
+### 1. Install Dependencies
+
+```bash
+pip install dspy-ai streamlit python-dotenv
+```
+
+### 2. Configure API Key (Cloud Version)
 
 ```bash
 export OPENROUTER_API_KEY="your-api-key-here"
 ```
 
-## 💡 Use Case Example: "Project LeaseAI"
-Som en demonstration af arkitekturens fleksibilitet, er repoet konfigureret til at løse problemet: "Struktureret dataudtræk fra Erhvervslejekontrakter".
+Or create a `.env` file in `demo-cloud-version/`:
+```
+OPENROUTER_API_KEY=your-api-key-here
+```
 
-- **Input:** 50+ siders ustruktureret juridisk tekst.
-- **Output:** 40+ validerede datapunkter mappet til branchestandarden (Unik Bolig).
-- **Resultat:** Demonstrerer evnen til at håndtere kompleks domæne-logik (f.eks. dansk lejelovgivning) i en automatiseret pipeline.
+### 3. Run the Dashboard
+
+**Cloud Version:**
+```bash
+cd demo-cloud-version
+streamlit run dashboard.py
+```
+
+**Local Version (requires Ollama running):**
+```bash
+cd sovereign-engine
+streamlit run dashboard.py
+```
+
+## 🔒 Privacy & Local Inference
+
+For production environments with strict data requirements, use `sovereign-engine/`:
+
+- **Air-Gapped Ready:** 100% offline operation via Ollama
+- **No Cloud Dependency:** Data never leaves your server
+- **Legacy Integration:** Outputs JSON/CSV/XML for existing systems
+- **Compliance Ready:** Suitable for GDPR, HIPAA, and other regulatory environments
+
+## 💡 Example Use Case
+
+**Query:** "Should we pause the AWS migration to save cash?"
+
+**Process:**
+1. Router scores complexity → DEEP_LANE (score: 7.5)
+2. 9 workers draft departmental analysis with peer review
+3. CFO, CMO, CTO debate with openings and rebuttals
+4. Sovereign (in "Wartime General" mode) synthesizes final decision
+
+**Output:** Strategic recommendation balancing all perspectives with transparent reasoning.
