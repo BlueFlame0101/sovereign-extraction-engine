@@ -1,8 +1,30 @@
+"""
+Model Discovery Service - OpenRouter API Scanner.
+
+This module queries the OpenRouter model registry to identify cost-effective
+LLM endpoints suitable for multi-agent orchestration. Filters by inference
+cost threshold to optimize operational expenditure.
+
+Output:
+    Generates model identifier mappings for integration into agent configuration.
+"""
+
 import requests
 import os
 
+
 def scout_models():
-    print("--- 🛡️ Scout is exploring OpenRouter for new brains ---")
+    """
+    Query OpenRouter API for available models and filter by cost threshold.
+    
+    Retrieves complete model catalog and applies pricing filter to identify
+    candidates with prompt cost below $0.10 per 1M tokens. Outputs formatted
+    model identifiers for configuration integration.
+    
+    Raises:
+        Prints error status code on API failure.
+    """
+    print("--- Model Discovery Service Initiated ---")
     
     url = "https://openrouter.ai/api/v1/models"
     headers = {
@@ -14,21 +36,20 @@ def scout_models():
     
     if response.status_code == 200:
         models = response.json()['data']
-        # Vi filtrerer efter modeller, der er billige og har høj kontekst
-        # 'pricing' er i dollars per 1M tokens
         cheap_models = [
             m for m in models 
-            if float(m['pricing']['prompt']) < 0.10  # Under 0.1$ pr. 1M tokens
+            if float(m['pricing']['prompt']) < 0.10
         ]
         
-        print(f"Fundet {len(cheap_models)} omkostningseffektive modeller.\n")
-        print("Anbefalet Telefonbog (MODELS):")
+        print(f"Identified {len(cheap_models)} cost-effective models.\n")
+        print("Model Registry Output:")
         print("-" * 30)
         
-        for m in cheap_models[:5]:  # Vi viser de 5 bedste fund
+        for m in cheap_models[:5]:
             print(f"'{m['name'].split(':')[0].lower()}': 'openrouter/{m['id']}',")
     else:
-        print(f"Fejl ved scouting: {response.status_code}")
+        print(f"API Error: {response.status_code}")
+
 
 if __name__ == "__main__":
     scout_models()

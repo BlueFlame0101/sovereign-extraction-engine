@@ -1,7 +1,24 @@
+"""
+Semantic Complexity Router - Query Classification Pipeline.
+
+This module implements the routing layer that classifies incoming queries
+by semantic complexity, directing them to either the FAST_LANE (simple
+responses) or DEEP_LANE (full council deliberation).
+
+Architecture:
+    - AssessComplexity: DSPy signature for complexity scoring
+    - RouterModule: Chain-of-thought classification module
+    - route_query: Public API with manual override capability
+
+Routing Logic:
+    - Score 1-4: FAST_LANE (direct response)
+    - Score 5-10: DEEP_LANE (council assembly)
+"""
+
 import dspy
 from config import lm
 
-# 1. Definer Signaturen (Input/Output kontrakten)
+
 class AssessComplexity(dspy.Signature):
     """Analyze the query complexity to route it to the correct processing pipeline."""
 
@@ -10,16 +27,32 @@ class AssessComplexity(dspy.Signature):
     reasoning = dspy.OutputField(desc="Brief justification for the score")
     route = dspy.OutputField(desc="Must be exactly 'FAST_LANE' or 'DEEP_LANE'")
 
-# 2. Byg Modulet
+
 class RouterModule(dspy.Module):
+    """
+    Chain-of-thought query complexity classifier.
+    
+    Uses DSPy's ChainOfThought to analyze query complexity and
+    produce routing decisions with confidence scores and reasoning.
+    """
+    
     def __init__(self):
+        """Initialize router with complexity assessment signature."""
         super().__init__()
         self.assess = dspy.ChainOfThought(AssessComplexity)
 
     def forward(self, query):
+        """
+        Classify query complexity and determine routing lane.
+        
+        Args:
+            query: User's input query for classification
+            
+        Returns:
+            dspy.Prediction: Contains route, score, and reasoning
+        """
         result = self.assess(query=query)
 
-        # Sikrer at vi får en brugbar score
         try:
             score = float(result.complexity_score)
         except:
@@ -33,9 +66,22 @@ class RouterModule(dspy.Module):
             reasoning=result.reasoning
         )
 
-# 3. Den opdaterede funktion med 'Override' mulighed
+
 def route_query(query_text, force_deep=False):
-    # Tjek for manuel override FØR vi spørger AI
+    """
+    Route query to appropriate processing pipeline.
+    
+    Public API for query classification with optional manual override.
+    When force_deep is True, bypasses AI classification and routes
+    directly to DEEP_LANE for council assembly.
+    
+    Args:
+        query_text: User's input query
+        force_deep: If True, bypass classification and force council assembly
+        
+    Returns:
+        dspy.Prediction: Contains route, score, and reasoning fields
+    """
     if force_deep:
         return dspy.Prediction(
             route="DEEP_LANE",
@@ -43,6 +89,5 @@ def route_query(query_text, force_deep=False):
             reasoning="MANUAL OVERRIDE: User requested Council assembly explicitly."
         )
 
-    # Ellers kør normal AI vurdering
     router = RouterModule()
     return router(query=query_text)

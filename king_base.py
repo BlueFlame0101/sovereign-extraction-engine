@@ -1,27 +1,53 @@
+"""
+Council Debate Engine - Multi-Agent Deliberation System.
+
+This module implements a round-table debate pattern where multiple LLM agents
+with distinct personas engage in structured argumentation. A sovereign arbiter
+synthesizes the final decision using a higher-capacity model.
+
+Architecture:
+    - Worker Agents: Low-latency models for rapid inference during debate rounds.
+    - Sovereign Agent: High-capacity model for final verdict synthesis.
+    - Shared Context: Cumulative transcript enabling cross-agent awareness.
+"""
+
 import dspy
 import os
 
-# --- 1. SETUP ---
-# Vi bruger en hurtig model til debatten, så det flyder let
+# Model Configuration
 expert_lm = dspy.LM(model='openrouter/google/gemini-3-flash-preview', api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
 leader_lm = dspy.LM(model='openrouter/meta-llama/llama-3.3-70b-instruct', api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
 
 dspy.settings.configure(lm=expert_lm)
 
-# --- 2. DEBATTØRENS HJERNE ---
+
 class DebateTurn(dspy.Signature):
-    """Du deltager i en intens rundbordsdiskussion. Læs hvad de andre har sagt, og giv dit besyv med."""
+    """
+    Signature for a single debate turn within the council deliberation.
     
-    role = dspy.InputField(desc="Din rolle")
-    objective = dspy.InputField(desc="Dit mål")
+    Enables context-aware response generation by providing full discussion
+    history, allowing agents to reference and rebut prior arguments.
+    """
     
-    # Her er nøglen: De får adgang til hele samtalens historik
-    discussion_log = dspy.InputField(desc="Hvad de andre har sagt indtil nu")
+    role = dspy.InputField(desc="Agent persona identifier")
+    objective = dspy.InputField(desc="Strategic objective guiding argumentation")
+    discussion_log = dspy.InputField(desc="Cumulative transcript of prior exchanges")
     
-    current_stance = dspy.OutputField(desc="Din nuværende holdning (kort)")
-    response = dspy.OutputField(desc="Dit svar til rådet (reager på de andre)")
+    current_stance = dspy.OutputField(desc="Condensed position statement")
+    response = dspy.OutputField(desc="Contextual response addressing prior arguments")
+
 
 class CouncilMember:
+    """
+    Individual debate agent with persistent persona and objective.
+    
+    Attributes:
+        name: Agent identifier for transcript attribution.
+        role: Persona defining argumentation style and domain focus.
+        objective: Strategic goal influencing response generation.
+        brain: DSPy predictor with chain-of-thought reasoning.
+    """
+    
     def __init__(self, name, role, objective):
         self.name = name
         self.role = role
@@ -29,7 +55,15 @@ class CouncilMember:
         self.brain = dspy.ChainOfThought(DebateTurn)
     
     def speak(self, history):
-        # Agenten læser historikken og formulerer et svar
+        """
+        Generate contextual response based on debate transcript.
+        
+        Args:
+            history: Full transcript of preceding debate exchanges.
+            
+        Returns:
+            str: Agent's response to current debate state.
+        """
         pred = self.brain(
             role=self.role, 
             objective=self.objective, 
@@ -37,59 +71,66 @@ class CouncilMember:
         )
         return pred.response
 
-# --- 3. ORDSTYREREN (THE SOVEREIGN) ---
-class FinalVerdict(dspy.Signature):
-    """Læs debatten og træf en endelig eksekutiv beslutning."""
-    debate_transcript = dspy.InputField()
-    decision = dspy.OutputField(desc="Endelig konklusion og budgetfordeling")
 
-# --- 4. RUNDBORDS-MOTOREN ---
-def run_round_table(topic, rounds=2):
-    print(f"\n--- 🛡️ RÅDET MØDES OM: '{topic}' ---")
+class FinalVerdict(dspy.Signature):
+    """
+    Signature for sovereign arbiter's final decision synthesis.
     
-    # Vores deltagere
+    Processes complete debate transcript to produce executive verdict
+    incorporating all perspectives and trade-offs.
+    """
+    debate_transcript = dspy.InputField()
+    decision = dspy.OutputField(desc="Executive decision with resource allocation")
+
+
+def run_round_table(topic, rounds=2):
+    """
+    Execute multi-round council deliberation on specified topic.
+    
+    Orchestrates debate flow across configured rounds, maintaining
+    shared context for cross-agent argumentation. Concludes with
+    sovereign synthesis using elevated model tier.
+    
+    Args:
+        topic: Strategic question for council deliberation.
+        rounds: Number of complete debate cycles. Default: 2.
+        
+    Side Effects:
+        - Writes debate transcript and verdict to council_debate_log.txt
+        - Prints real-time debate progress to stdout.
+    """
+    print(f"\n--- COUNCIL CONVENED: '{topic}' ---")
+    
     council = [
         CouncilMember("Alpha", "Hardware Extremist", "Maksimer performance, ignorér pris."),
         CouncilMember("Beta", "Software Purist", "Alt skal løses med kode. Hardware er spild."),
         CouncilMember("Delta", "CFO (Finans)", "Spar penge. Stop unødvendige indkøb.")
     ]
     
-    # Den fælles hukommelse (Transcript)
     transcript = f"EMNE: {topic}\n"
     
-    # Vi kører et antal runder, så de kan nå at svare hinanden
     for r in range(1, rounds + 1):
-        print(f"\n--- 🔄 RUNDE {r} ---")
+        print(f"\n--- ROUND {r} ---")
         
         for member in council:
-            # Hvert medlem får 'transcript' som input -> De ser hvad de andre lige har sagt
             response = member.speak(transcript)
-            
-            # Vi formaterer indlægget
             entry = f"\n[{member.name} ({member.role})]:\n{response}\n"
-            
-            # Opdaterer den fælles hukommelse
             transcript += entry
-            
-            # Live output
-            print(f"🗣️ {member.name}: {response[:100]}...") # Viser preview
+            print(f"[{member.name}]: {response[:100]}...")
 
-    # --- KONKLUSION ---
-    print("\n👑 The Sovereign rejser sig for at tale...")
+    print("\n[SOVEREIGN] Synthesizing final verdict...")
     
-    # Lederen bruger den tunge model til at analysere hele debatten
     with dspy.context(lm=leader_lm):
         sov_brain = dspy.ChainOfThought(FinalVerdict)
         verdict = sov_brain(debate_transcript=transcript).decision
     
-    print(f"\n{'='*40}\nREFERAT AF DEBATTEN:\n{transcript}\n{'='*40}")
-    print(f"\nDOMMEN:\n{verdict}")
+    print(f"\n{'='*40}\nDEBATE TRANSCRIPT:\n{transcript}\n{'='*40}")
+    print(f"\nVERDICT:\n{verdict}")
     
-    # Gem til log
     with open("council_debate_log.txt", "w", encoding="utf-8") as f:
-        f.write(transcript + "\n\nDOM:\n" + verdict)
+        f.write(transcript + "\n\nVERDICT:\n" + verdict)
 
-# --- 5. EKSEKVERING ---
+
 if __name__ == "__main__":
     spørgsmål = "Skal vi migrere vores database til Cloud eller bygge vores eget datacenter i kælderen?"
     run_round_table(spørgsmål, rounds=2)
