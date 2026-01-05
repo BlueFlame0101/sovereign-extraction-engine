@@ -57,7 +57,7 @@ graph TD
 | **Peer Review** | Workers cross-review each other's drafts with scores before boss synthesis |
 | **Adversarial Debate** | Chiefs give opening arguments, then rebuttals attacking each other's logic |
 | **Sovereign Personas** | Configurable decision strategies (Balanced / Wartime / Visionary) |
-| **RAG Integration** | Each department retrieves context from a shared knowledge graph |
+| **RAG Integration** | Architecture ready for vector DB (currently stubbed with sample data) |
 
 ### Sovereign Personas
 
