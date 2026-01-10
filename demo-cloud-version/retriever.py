@@ -1,47 +1,67 @@
-"""
-RAG Retriever Module - Knowledge Graph Context Provider.
+import chromadb
+from chromadb.config import Settings
 
-This module provides the retrieval interface for injecting organizational
-context into agent inference. Currently implements a stub returning static
-company data; production deployment would integrate with a vector database
-(e.g., ChromaDB, FAISS, Pinecone).
 
-Note:
-    This is a placeholder implementation. Replace with actual vector store
-    integration for production use.
-"""
+client = chromadb.Client(Settings(anonymized_telemetry=False))
 
-import time
+try:
+    collection = client.get_collection("company_knowledge")
+except:
+    collection = client.create_collection("company_knowledge")
+
+    documents = [
+        "Current burn rate is $50k per month with 18 months of runway remaining. Q4 expenses exceeded budget by 12%.",
+        "AWS migration project is approved but paused due to cost concerns. Estimated cost: $15k/month vs current $8k/month.",
+        "Engineering headcount budget is frozen except for critical backend roles. Sales hiring is completely frozen.",
+        "User base grew 15% last quarter, reaching 12,000 active users. However, enterprise churn rate is 5% monthly.",
+        "Product-led growth is the 2025 strategic priority per CEO directive. Focus on self-service onboarding.",
+        "Competitor analysis shows we're 30% cheaper but lack enterprise features like SSO and audit logs.",
+        "Legacy on-premise servers are experiencing daily crashes. Uptime SLA is currently at 94% (target: 99.5%).",
+        "Technical debt backlog estimated at 400 engineering hours. Priority items: database migration, API refactor.",
+        "Security audit identified 3 critical vulnerabilities. Remediation required before enterprise sales can proceed.",
+        "Kubernetes migration is 60% complete. Remaining work: database stateful sets and monitoring integration.",
+    ]
+
+    metadatas = [
+        {"department": "FINANCE", "source": "CFO Q4 Report"},
+        {"department": "FINANCE", "source": "Infrastructure Budget"},
+        {"department": "FINANCE", "source": "HR Policy Doc"},
+        {"department": "GROWTH", "source": "Growth Metrics Dashboard"},
+        {"department": "GROWTH", "source": "Strategy Memo 2025"},
+        {"department": "GROWTH", "source": "Competitive Intelligence"},
+        {"department": "TECH", "source": "Incident Reports"},
+        {"department": "TECH", "source": "Engineering Roadmap"},
+        {"department": "TECH", "source": "Security Audit"},
+        {"department": "TECH", "source": "Infrastructure Status"},
+    ]
+
+    ids = [f"doc_{i}" for i in range(len(documents))]
+
+    collection.add(documents=documents, metadatas=metadatas, ids=ids)
 
 
 def search_graph_rag(query, department_focus):
-    """
-    Retrieve contextual knowledge from organizational data store.
-    
-    Queries the knowledge graph for context relevant to the specified
-    department, providing shared context to all worker agents within
-    the departmental inference pipeline.
-    
-    Args:
-        query: User query for semantic similarity matching.
-        department_focus: Department identifier for context filtering.
-        
-    Returns:
-        str: Retrieved context block for RAG injection.
-        
-    Note:
-        Current implementation returns static stub data.
-        Production: Replace with vector similarity search.
-    """
-    print(f"   [GraphRAG] Querying context store for: {department_focus}...")
+    print(f"   [GraphRAG] Querying vector store for: {department_focus}...")
 
-    common_knowledge = """
-    [CONFIDENTIAL COMPANY DATA]
-    1. Financials: Current burn rate is $50k/month. Cash runway: 18 months.
-    2. Growth: User base grew 15% last Q, but churn is high (5%) in Enterprise sector.
-    3. Tech: The legacy servers are crashing daily. Migration to AWS is approved but paused due to cost.
-    4. Strategy: CEO wants to focus on "Product-Led Growth" in 2025.
-    5. Personnel: Hiring freeze is active for all non-engineering roles.
-    """
+    dept_key = department_focus.split()[0] if department_focus else None
 
-    return common_knowledge
+    if dept_key and dept_key in ["FINANCE", "GROWTH", "TECH"]:
+        results = collection.query(
+            query_texts=[query],
+            n_results=3,
+            where={"department": dept_key}
+        )
+    else:
+        results = collection.query(
+            query_texts=[query],
+            n_results=3
+        )
+
+    if results['documents'] and len(results['documents'][0]) > 0:
+        context_blocks = []
+        for i, doc in enumerate(results['documents'][0]):
+            source = results['metadatas'][0][i].get('source', 'Unknown')
+            context_blocks.append(f"[{source}]: {doc}")
+        return "\n\n".join(context_blocks)
+    else:
+        return "[No relevant context found in knowledge base]"

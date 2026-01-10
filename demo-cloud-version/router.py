@@ -12,7 +12,19 @@ Routing Logic:
 """
 
 import dspy
+import time
 from config import lm
+
+
+def retry_with_backoff(func, max_retries=3, base_delay=1.0):
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise Exception(f"Failed after {max_retries} attempts: {str(e)}")
+            delay = base_delay * (2 ** attempt)
+            time.sleep(delay)
 
 
 class AssessComplexity(dspy.Signature):
@@ -43,27 +55,30 @@ class RouterModule(dspy.Module):
     def forward(self, query):
         """
         Evaluate query and produce routing prediction.
-        
+
         Args:
             query: User input string for complexity assessment.
-            
+
         Returns:
             dspy.Prediction: Contains route, score, and reasoning fields.
         """
-        result = self.assess(query=query)
+        def execute():
+            result = self.assess(query=query)
 
-        try:
-            score = float(result.complexity_score)
-        except:
-            score = 5.0
+            try:
+                score = float(result.complexity_score)
+            except:
+                score = 5.0
 
-        final_route = "DEEP_LANE" if score > 4 else "FAST_LANE"
+            final_route = "DEEP_LANE" if score > 4 else "FAST_LANE"
 
-        return dspy.Prediction(
-            route=final_route,
-            score=score,
-            reasoning=result.reasoning
-        )
+            return dspy.Prediction(
+                route=final_route,
+                score=score,
+                reasoning=result.reasoning
+            )
+
+        return retry_with_backoff(execute)
 
 
 def route_query(query_text, force_deep=False):
