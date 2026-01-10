@@ -1,6 +1,6 @@
 import dspy
-import asyncio
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from config import TEAM_FINANCE, TEAM_GROWTH, TEAM_TECH, BOSS_MODEL
 from retriever import search_graph_rag
 
@@ -64,21 +64,21 @@ class Department(dspy.Module):
         self.goal = goal
         self.workers = team_models
         self.boss_lm = BOSS_MODEL
-        self.drafter = dspy.Predict(DraftSignature)
-        self.reviewer = dspy.Predict(PeerReviewSignature)
         self.boss = dspy.Predict(BossSignature)
 
-    async def _draft_worker(self, worker_id, model, context, query):
+    def _draft_worker(self, worker_id, model, context, query):
         def execute():
+            drafter = dspy.Predict(DraftSignature)
             with dspy.context(lm=model):
-                res = self.drafter(department_goal=self.goal, rag_context=context, query=query)
+                res = drafter(department_goal=self.goal, rag_context=context, query=query)
                 return res.draft_answer
         return retry_with_backoff(execute)
 
-    async def _review_draft(self, judge_model, draft_text):
+    def _review_draft(self, judge_model, draft_text):
         def execute():
+            reviewer = dspy.Predict(PeerReviewSignature)
             with dspy.context(lm=judge_model):
-                res = self.reviewer(department_goal=self.goal, proposal_text=draft_text)
+                res = reviewer(department_goal=self.goal, proposal_text=draft_text)
                 try:
                     score = float(str(res.score).split('/')[0].strip())
                 except:
@@ -94,21 +94,33 @@ class Department(dspy.Module):
         worker_names = ["Worker 1 (Mistral)", "Worker 2 (Gemma)", "Worker 3 (Llama)"]
 
         print(f"   |- All 3 workers drafting in parallel...")
-        draft_tasks = [
-            self._draft_worker(i, self.workers[i], context, query)
-            for i in range(3)
-        ]
-        drafts = asyncio.run(asyncio.gather(*draft_tasks))
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            draft_futures = {
+                executor.submit(self._draft_worker, i, self.workers[i], context, query): i
+                for i in range(3)
+            }
+            drafts = [None] * 3
+            for future in as_completed(draft_futures):
+                worker_id = draft_futures[future]
+                drafts[worker_id] = future.result()
         print(" [DONE]")
 
         print("   |- Peer review protocol (6 reviews in parallel)...")
         peer_map = [[1, 2], [0, 2], [0, 1]]
-        review_tasks = []
-        for i in range(3):
-            for judge_idx in peer_map[i]:
-                review_tasks.append(self._review_draft(self.workers[judge_idx], drafts[i]))
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            review_futures = []
+            for i in range(3):
+                for judge_idx in peer_map[i]:
+                    future = executor.submit(self._review_draft, self.workers[judge_idx], drafts[i])
+                    review_futures.append((i, future))
 
-        all_scores = asyncio.run(asyncio.gather(*review_tasks))
+            all_scores = []
+            for i in range(3):
+                scores_for_draft = []
+                for draft_id, future in review_futures:
+                    if draft_id == i:
+                        scores_for_draft.append(future.result())
+                all_scores.extend(scores_for_draft)
 
         reviews = []
         score_idx = 0

@@ -13,7 +13,7 @@ Routing Logic:
 
 import dspy
 import time
-from config import lm
+from config import BOSS_MODEL
 
 
 def retry_with_backoff(func, max_retries=3, base_delay=1.0):
@@ -50,6 +50,7 @@ class RouterModule(dspy.Module):
     
     def __init__(self):
         super().__init__()
+        self.lm = BOSS_MODEL
         self.assess = dspy.ChainOfThought(AssessComplexity)
 
     def forward(self, query):
@@ -63,20 +64,21 @@ class RouterModule(dspy.Module):
             dspy.Prediction: Contains route, score, and reasoning fields.
         """
         def execute():
-            result = self.assess(query=query)
+            with dspy.context(lm=self.lm):
+                result = self.assess(query=query)
 
-            try:
-                score = float(result.complexity_score)
-            except:
-                score = 5.0
+                try:
+                    score = float(result.complexity_score)
+                except:
+                    score = 5.0
 
-            final_route = "DEEP_LANE" if score > 4 else "FAST_LANE"
+                final_route = "DEEP_LANE" if score > 4 else "FAST_LANE"
 
-            return dspy.Prediction(
-                route=final_route,
-                score=score,
-                reasoning=result.reasoning
-            )
+                return dspy.Prediction(
+                    route=final_route,
+                    score=score,
+                    reasoning=result.reasoning
+                )
 
         return retry_with_backoff(execute)
 
